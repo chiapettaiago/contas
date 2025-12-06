@@ -183,26 +183,12 @@ foreach ($despesas as $dd) {
                                             <td class="text-center">
                                                 <?php if (!empty($d['pago']) && $d['pago'] == 1): ?>
                                                     <span class="badge bg-success me-2">Pago</span>
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Marcar como pendente?')">
-                                                        <input type="hidden" name="acao" value="pagar">
-                                                        <input type="hidden" name="id" value="<?= $d['id'] ?>">
-                                                        <input type="hidden" name="pagar" value="0">
-                                                        <button class="btn btn-sm btn-outline-warning">Desmarcar</button>
-                                                    </form>
+                                                    <button class="btn btn-sm btn-outline-warning btn-toggle-pago" data-id="<?= $d['id'] ?>" data-pagar="0">Desmarcar</button>
                                                 <?php else: ?>
-                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Confirmar pagamento?')">
-                                                        <input type="hidden" name="acao" value="pagar">
-                                                        <input type="hidden" name="id" value="<?= $d['id'] ?>">
-                                                        <input type="hidden" name="pagar" value="1">
-                                                        <button class="btn btn-sm btn-success"><i class="fas fa-check"></i> Pagar</button>
-                                                    </form>
+                                                    <button class="btn btn-sm btn-success btn-toggle-pago" data-id="<?= $d['id'] ?>" data-pagar="1"><i class="fas fa-check"></i> Pagar</button>
                                                 <?php endif; ?>
 
-                                                <form method="POST" style="display:inline; margin-left:4px;" onsubmit="return confirm('Remover?')">
-                                                    <input type="hidden" name="acao" value="deletar">
-                                                    <input type="hidden" name="id" value="<?= $d['id'] ?>">
-                                                    <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                                                </form>
+                                                <button class="btn btn-sm btn-danger btn-delete-transacao" data-id="<?= $d['id'] ?>" style="margin-left:4px"><i class="fas fa-trash"></i></button>
                                             </td>
                                         </tr>
                                 <?php endforeach; ?>
@@ -215,5 +201,77 @@ foreach ($despesas as $dd) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function atualizarPainelPendentes(totals, pendentesCount) {
+            // Atualiza o card de pendentes
+            const totalEl = document.querySelector('.card.border-warning .h5');
+            if (totalEl) totalEl.textContent = 'R$ ' + Number(totals.pendentes).toFixed(2).replace('.', ',');
+            const countEl = document.querySelector('.card.border-warning .h5.mb-0');
+            if (countEl) countEl.textContent = pendentesCount;
+        }
+
+        document.querySelectorAll('.btn-toggle-pago').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const id = this.dataset.id;
+                const pagar = this.dataset.pagar;
+                const mes = document.getElementById('mes') ? document.getElementById('mes').value : null;
+                const ano = document.getElementById('ano') ? document.getElementById('ano').value : null;
+
+                if (!confirm(pagar == '1' ? 'Confirmar pagamento?' : 'Marcar como pendente?')) return;
+
+                fetch('ajax/pagar_transacao.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ id: id, pagar: pagar, mes: mes, ano: ano })
+                }).then(r => r.json()).then(data => {
+                    if (!data.success) return alert('Erro: ' + (data.error || 'Ação falhou'));
+
+                    // Atualiza a linha: trocar badge/button
+                    const row = btn.closest('tr');
+                    if (data.pago == 1) {
+                        // mostrar badge Pago e botão Desmarcar + botão excluir (AJAX)
+                        row.querySelector('td.text-center').innerHTML = '<span class="badge bg-success me-2">Pago</span>' +
+                            '<button class="btn btn-sm btn-outline-warning btn-toggle-pago" data-id="' + id + '" data-pagar="0">Desmarcar</button>' +
+                            '<button class="btn btn-sm btn-danger btn-delete-transacao" data-id="' + id + '" style="margin-left:4px"><i class="fas fa-trash"></i></button>';
+                    } else {
+                        row.querySelector('td.text-center').innerHTML = '<button class="btn btn-sm btn-success btn-toggle-pago" data-id="' + id + '" data-pagar="1"><i class="fas fa-check"></i> Pagar</button>' +
+                            '<button class="btn btn-sm btn-danger btn-delete-transacao" data-id="' + id + '" style="margin-left:4px"><i class="fas fa-trash"></i></button>';
+                    }
+
+                    // Rebind handlers (simple approach: attach delete handler)
+                    row.querySelectorAll('.btn-delete-transacao').forEach(b => {
+                        b.addEventListener('click', function() {
+                            const idDel = this.dataset.id;
+                            if (!confirm('Remover?')) return;
+                            const mes = document.getElementById('mes') ? document.getElementById('mes').value : null;
+                            const ano = document.getElementById('ano') ? document.getElementById('ano').value : null;
+                            fetch('ajax/delete_transacao.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: new URLSearchParams({ id: idDel, mes: mes, ano: ano })
+                            }).then(r => r.json()).then(resp => {
+                                if (!resp.success) return alert('Erro ao deletar');
+                                // remover linha
+                                const tr = b.closest('tr');
+                                if (tr) tr.remove();
+                                // atualizar painel e broadcast
+                                atualizarPainelPendentes(resp.totals, document.querySelectorAll('tbody tr').length - document.querySelectorAll('tbody tr .badge.bg-success').length);
+                                try { localStorage.setItem('contas:despesa:update', Date.now()); } catch (e) {}
+                            }).catch(e => alert('Erro na requisição'));
+                        });
+                    });
+
+                    // Atualiza painel de pendentes
+                    const totals = data.totals;
+                    // recalcula pendentesCount de forma simples (pode ser melhorado)
+                    const pendentesCount = document.querySelectorAll('tbody tr').length - document.querySelectorAll('tbody tr .badge.bg-success').length;
+                    atualizarPainelPendentes(totals, pendentesCount);
+
+                    // Broadcast para outras abas/páginas atualizarem o gráfico
+                    try { localStorage.setItem('contas:despesa:update', Date.now()); } catch (e) {}
+                }).catch(err => { console.error(err); alert('Erro na requisição'); });
+            });
+        });
+    </script>
 </body>
 </html>

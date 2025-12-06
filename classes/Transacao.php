@@ -202,9 +202,15 @@ class Transacao {
             $userId = 1;
         }
 
-        $sql = "UPDATE transacoes SET pago = ? WHERE id = ? AND user_id = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([(int)$pago, $id, $userId]);
+            if ((int)$pago === 1) {
+                $sql = "UPDATE transacoes SET pago = 1, data_pago = NOW() WHERE id = ? AND user_id = ?";
+                $stmt = $this->pdo->prepare($sql);
+                return $stmt->execute([$id, $userId]);
+            } else {
+                $sql = "UPDATE transacoes SET pago = 0, data_pago = NULL WHERE id = ? AND user_id = ?";
+                $stmt = $this->pdo->prepare($sql);
+                return $stmt->execute([$id, $userId]);
+            }
     }
 
     /**
@@ -229,6 +235,39 @@ class Transacao {
         $stmt->execute($params);
         $res = $stmt->fetch();
         return (float) ($res['total'] ?? 0);
+    }
+
+    /**
+     * Retorna um array com o total de despesas por dia para o mês/ano informados.
+     * Se $apenasPagos for true, considera apenas transações com pago = 1.
+     * Retorna array no formato [dia => total]
+     */
+    public function despesasPorDia($mes, $ano, $apenasPagos = false) {
+        $userId = null;
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id'])) {
+            $userId = (int) $_SESSION['user_id'];
+        } else {
+            $userId = 1;
+        }
+
+        $sql = "SELECT DAY(data_transacao) as dia, COALESCE(SUM(valor),0) as total
+                FROM transacoes
+                WHERE tipo = 'despesa' AND MONTH(data_transacao) = ? AND YEAR(data_transacao) = ? AND user_id = ?";
+        $params = [$mes, $ano, $userId];
+        if ($apenasPagos) {
+            $sql .= " AND pago = 1";
+        }
+        $sql .= " GROUP BY dia ORDER BY dia";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $result = [];
+        foreach ($rows as $r) {
+            $result[(int)$r['dia']] = (float)$r['total'];
+        }
+        return $result;
     }
 }
 ?>

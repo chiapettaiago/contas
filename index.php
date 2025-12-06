@@ -27,6 +27,21 @@ $despesaPendentes = $despesaTotalAll - $despesa;
 $resumoPorCategoria = $transacao->resumoPorCategoria($mes, $ano);
 
 $saldo = $receita - $despesa; // saldo = receitas - despesas pagas
+
+// Dados diários de despesas para o gráfico
+$despesasPagasPorDia = $transacao->despesasPorDia($mes, $ano, true);
+$despesasAllPorDia = $transacao->despesasPorDia($mes, $ano, false);
+$diasNoMes = (int) (new DateTime(sprintf('%04d-%02d-01', $ano, $mes)))->format('t');
+$labelsDias = [];
+$dadosPagas = [];
+$dadosPendentes = [];
+for ($d = 1; $d <= $diasNoMes; $d++) {
+    $labelsDias[] = $d;
+    $p = isset($despesasPagasPorDia[$d]) ? $despesasPagasPorDia[$d] : 0;
+    $a = isset($despesasAllPorDia[$d]) ? $despesasAllPorDia[$d] : 0;
+    $dadosPagas[] = $p;
+    $dadosPendentes[] = max(0, $a - $p);
+}
 ?>
 
 <!DOCTYPE html>
@@ -38,6 +53,7 @@ $saldo = $receita - $despesa; // saldo = receitas - despesas pagas
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
@@ -111,8 +127,21 @@ $saldo = $receita - $despesa; // saldo = receitas - despesas pagas
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Despesas por Dia (mês selecionado)</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="graficoDespesasDiarias" height="80"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">Resumo por Categoria</h5>
@@ -169,6 +198,92 @@ $saldo = $receita - $despesa; // saldo = receitas - despesas pagas
             const mes = document.getElementById('mes').value;
             window.location.href = `?mes=${mes}&ano=${ano}`;
         });
+    </script>
+    <script>
+        // Dados vindos do PHP
+        const labelsDias = <?= json_encode($labelsDias) ?>;
+        const dataPagas = <?= json_encode($dadosPagas) ?>;
+        const dataPendentes = <?= json_encode($dadosPendentes) ?>;
+
+        const canvas = document.getElementById('graficoDespesasDiarias');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            window.graficoDespesasDiarias = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labelsDias,
+                    datasets: [
+                        {
+                            label: 'Despesas Pagas',
+                            data: dataPagas,
+                            backgroundColor: 'rgba(220,53,69,0.85)',
+                            borderColor: 'rgba(220,53,69,1)'
+                        },
+                        {
+                            label: 'Despesas Pendentes',
+                            data: dataPendentes,
+                            backgroundColor: 'rgba(255,193,7,0.85)',
+                            borderColor: 'rgba(255,193,7,1)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(v){ return 'R$ ' + v.toFixed(2).replace('.', ','); } }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const v = ctx.raw || 0;
+                                    return ctx.dataset.label + ': R$ ' + v.toFixed(2).replace('.', ',');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Função para atualizar o gráfico buscando dados via AJAX
+            async function atualizarGraficoDespesas(mesParam, anoParam) {
+                try {
+                    const params = new URLSearchParams({ mes: mesParam || <?= $mes ?>, ano: anoParam || <?= $ano ?> });
+                    const res = await fetch('ajax/despesas_por_dia.php?' + params.toString());
+                    const json = await res.json();
+                    if (!json.success) return;
+
+                    const dias = [];
+                    const pagas = [];
+                    const pendentes = [];
+                    const diasNoMesLocal = labelsDias.length;
+                    for (let d = 1; d <= diasNoMesLocal; d++) {
+                        dias.push(d);
+                        const p = json.pagas[d] ? Number(json.pagas[d]) : 0;
+                        const a = json.all[d] ? Number(json.all[d]) : 0;
+                        pagas.push(p);
+                        pendentes.push(Math.max(0, a - p));
+                    }
+
+                    window.graficoDespesasDiarias.data.labels = dias;
+                    window.graficoDespesasDiarias.data.datasets[0].data = pagas;
+                    window.graficoDespesasDiarias.data.datasets[1].data = pendentes;
+                    window.graficoDespesasDiarias.update();
+                } catch (e) {
+                    console.error('Erro ao atualizar gráfico:', e);
+                }
+            }
+
+            // Ouvir eventos de storage para atualizações em outras abas
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'contas:despesa:update') {
+                    atualizarGraficoDespesas();
+                }
+            });
+        }
     </script>
 </body>
 </html>
