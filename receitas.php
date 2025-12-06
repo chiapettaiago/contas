@@ -128,6 +128,11 @@ $receitas = $transacao->listar(['mes' => $mes, 'ano' => $ano, 'tipo' => 'receita
 
             <div class="col-md-6">
                 <h3>Receitas no Período</h3>
+                <div class="text-end mb-3">
+                    <a href="export/pdf.php?page=receitas&mes=<?= $mes ?>&ano=<?= $ano ?>" target="_blank" class="btn btn-primary">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </a>
+                </div>
                 <?php if (empty($receitas)): ?>
                     <p class="text-muted">Nenhuma receita neste período</p>
                 <?php else: ?>

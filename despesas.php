@@ -145,6 +145,11 @@ foreach ($despesas as $dd) {
 
             <div class="col-md-6">
                 <h3>Despesas no Período</h3>
+                <div class="text-end mb-3">
+                    <a href="export/pdf.php?page=despesas&mes=<?= $mes ?>&ano=<?= $ano ?>" target="_blank" class="btn btn-primary">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </a>
+                </div>
                 <div class="mb-3">
                     <div class="card border-warning bg-light">
                         <div class="card-body py-2">

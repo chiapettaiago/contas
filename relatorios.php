@@ -98,6 +98,12 @@ for ($m = 1; $m <= 12; $m++) {
             </div>
         </div>
 
+        <div class="text-end mb-3">
+            <a href="export/pdf.php?page=relatorios&mes=<?= $mes ?>&ano=<?= $ano ?>" target="_blank" class="btn btn-primary">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </a>
+        </div>
+
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card text-white bg-success">
