@@ -166,11 +166,24 @@ body {
 .login-right a:hover { text-decoration: underline; }
 
 /* Dashboard: garantir cartões com mesma altura e alinhamento */
+.dashboard-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.dashboard-row > .col-12.col-md-4 {
+    flex: 1 1 0;
+    max-width: calc(33.333% - 0.67rem);
+    display: flex;
+}
+
 .dashboard-row > .col-12 > .card,
 .dashboard-row > .col-md-4 > .card {
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-height: 140px;
 }
 
 .dashboard-row .card.h-100 {
@@ -182,6 +195,14 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    padding: 1.5rem;
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-row > .col-12.col-md-4 {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
 }
 
 .display-6 {
