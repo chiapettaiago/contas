@@ -16,20 +16,17 @@ $categoria = new Categoria($pdo);
 $mes = isset($_GET['mes']) ? (int)$_GET['mes'] : date('n');
 $ano = isset($_GET['ano']) ? (int)$_GET['ano'] : date('Y');
 
-$resumo = $transacao->resumoMensal($mes, $ano);
+// Receitas: soma de todas as receitas no período
+$receita = $transacao->totalPorTipo('receita', $mes, $ano, false);
+// Despesas: soma apenas das despesas marcadas como pagas (usadas para calcular o saldo)
+$despesa = $transacao->totalPorTipo('despesa', $mes, $ano, true);
+// Despesas totais (pagas + pendentes) e pendentes
+$despesaTotalAll = $transacao->totalPorTipo('despesa', $mes, $ano, false);
+$despesaPendentes = $despesaTotalAll - $despesa;
+
 $resumoPorCategoria = $transacao->resumoPorCategoria($mes, $ano);
-$receita = 0;
-$despesa = 0;
 
-foreach ($resumo as $item) {
-    if ($item['tipo'] === 'receita') {
-        $receita = $item['total'];
-    } else {
-        $despesa = $item['total'];
-    }
-}
-
-$saldo = $receita - $despesa; // saldo = somatório das receitas menos despesas
+$saldo = $receita - $despesa; // saldo = receitas - despesas pagas
 ?>
 
 <!DOCTYPE html>
@@ -99,7 +96,8 @@ $saldo = $receita - $despesa; // saldo = somatório das receitas menos despesas
                 <div class="card text-white bg-danger h-100">
                     <div class="card-body d-flex flex-column justify-content-center text-center">
                         <h6 class="card-title">Despesas</h6>
-                        <h2 class="display-6">R$ <?= number_format($despesa, 2, ',', '.') ?></h2>
+                        <div class="mb-1 small">Pagas: <strong>R$ <?= number_format($despesa, 2, ',', '.') ?></strong></div>
+                        <div class="mb-0 small">Pendentes: <strong>R$ <?= number_format($despesaPendentes, 2, ',', '.') ?></strong></div>
                     </div>
                 </div>
             </div>

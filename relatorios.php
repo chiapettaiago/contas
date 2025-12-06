@@ -14,19 +14,12 @@ $transacao = new Transacao($pdo);
 $mes = isset($_GET['mes']) ? (int)$_GET['mes'] : date('n');
 $ano = isset($_GET['ano']) ? (int)$_GET['ano'] : date('Y');
 
-$resumo = $transacao->resumoMensal($mes, $ano);
 $resumoPorCategoria = $transacao->resumoPorCategoria($mes, $ano);
 
-$receita = 0;
-$despesa = 0;
-
-foreach ($resumo as $item) {
-    if ($item['tipo'] === 'receita') {
-        $receita = $item['total'];
-    } else {
-        $despesa = $item['total'];
-    }
-}
+// Receitas: soma de todas as receitas no período
+$receita = $transacao->totalPorTipo('receita', $mes, $ano, false);
+// Despesas: considerar apenas despesas marcadas como pagas
+$despesa = $transacao->totalPorTipo('despesa', $mes, $ano, true);
 
 $saldo = $receita - $despesa;
 
@@ -37,20 +30,9 @@ $totaisDespesa = [];
 $anoAtual = date('Y');
 
 for ($m = 1; $m <= 12; $m++) {
-    $resumoMes = $transacao->resumoMensal($m, $anoAtual);
     $meses[] = date('M', mktime(0, 0, 0, $m, 1));
-    
-    $receitaMes = 0;
-    $despesaMes = 0;
-    
-    foreach ($resumoMes as $item) {
-        if ($item['tipo'] === 'receita') {
-            $receitaMes = $item['total'];
-        } else {
-            $despesaMes = $item['total'];
-        }
-    }
-    
+    $receitaMes = $transacao->totalPorTipo('receita', $m, $anoAtual, false);
+    $despesaMes = $transacao->totalPorTipo('despesa', $m, $anoAtual, true);
     $totaisReceita[] = $receitaMes;
     $totaisDespesa[] = $despesaMes;
 }

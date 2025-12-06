@@ -32,6 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $transacao->deletar($_POST['id']);
             $mensagem = 'Despesa removida.';
             $tipo_mensagem = 'success';
+        } elseif (isset($_POST['acao']) && $_POST['acao'] === 'pagar') {
+            $id = $_POST['id'];
+            $pagar = isset($_POST['pagar']) && $_POST['pagar'] == '1' ? 1 : 0;
+            $transacao->marcarPago($id, $pagar);
+            $mensagem = $pagar ? 'Despesa marcada como paga.' : 'Despesa marcada como pendente.';
+            $tipo_mensagem = 'success';
         }
     } catch (Exception $e) {
         $mensagem = 'Erro: ' . $e->getMessage();
@@ -44,6 +50,17 @@ $ano = isset($_GET['ano']) ? (int)$_GET['ano'] : date('Y');
 
 $categorias = $categoria->listar('despesa');
 $despesas = $transacao->listar(['mes' => $mes, 'ano' => $ano, 'tipo' => 'despesa'], 1000);
+
+// Totais: despesas pagas, despesas totais e pendentes
+$totalDespesasAll = $transacao->totalPorTipo('despesa', $mes, $ano, false);
+$totalDespesasPagas = $transacao->totalPorTipo('despesa', $mes, $ano, true);
+$totalDespesasPendentes = $totalDespesasAll - $totalDespesasPagas;
+
+// Contar itens pendentes na listagem
+$pendentesCount = 0;
+foreach ($despesas as $dd) {
+    if (empty($dd['pago']) || $dd['pago'] == 0) $pendentesCount++;
+}
 ?>
 
 <!DOCTYPE html>
@@ -128,6 +145,22 @@ $despesas = $transacao->listar(['mes' => $mes, 'ano' => $ano, 'tipo' => 'despesa
 
             <div class="col-md-6">
                 <h3>Despesas no Período</h3>
+                <div class="mb-3">
+                    <div class="card border-warning bg-light">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Total pendente:</strong>
+                                    <div class="h5 mb-0">R$ <?= number_format($totalDespesasPendentes, 2, ',', '.') ?></div>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">Itens pendentes</small>
+                                    <div class="h5 mb-0"><?= $pendentesCount ?></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <?php if (empty($despesas)): ?>
                     <p class="text-muted">Nenhuma despesa neste período</p>
                 <?php else: ?>
@@ -143,18 +176,35 @@ $despesas = $transacao->listar(['mes' => $mes, 'ano' => $ano, 'tipo' => 'despesa
                             </thead>
                             <tbody>
                                 <?php foreach ($despesas as $d): ?>
-                                    <tr>
-                                        <td><?= date('d/m/Y', strtotime($d['data_transacao'])) ?></td>
-                                        <td><?= htmlspecialchars($d['descricao']) ?></td>
-                                        <td class="text-end">R$ <?= number_format($d['valor'], 2, ',', '.') ?></td>
-                                        <td class="text-center">
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Remover?')">
-                                                <input type="hidden" name="acao" value="deletar">
-                                                <input type="hidden" name="id" value="<?= $d['id'] ?>">
-                                                <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                                            </form>
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td><?= date('d/m/Y', strtotime($d['data_transacao'])) ?></td>
+                                            <td><?= htmlspecialchars($d['descricao']) ?></td>
+                                            <td class="text-end">R$ <?= number_format($d['valor'], 2, ',', '.') ?></td>
+                                            <td class="text-center">
+                                                <?php if (!empty($d['pago']) && $d['pago'] == 1): ?>
+                                                    <span class="badge bg-success me-2">Pago</span>
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Marcar como pendente?')">
+                                                        <input type="hidden" name="acao" value="pagar">
+                                                        <input type="hidden" name="id" value="<?= $d['id'] ?>">
+                                                        <input type="hidden" name="pagar" value="0">
+                                                        <button class="btn btn-sm btn-outline-warning">Desmarcar</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Confirmar pagamento?')">
+                                                        <input type="hidden" name="acao" value="pagar">
+                                                        <input type="hidden" name="id" value="<?= $d['id'] ?>">
+                                                        <input type="hidden" name="pagar" value="1">
+                                                        <button class="btn btn-sm btn-success"><i class="fas fa-check"></i> Pagar</button>
+                                                    </form>
+                                                <?php endif; ?>
+
+                                                <form method="POST" style="display:inline; margin-left:4px;" onsubmit="return confirm('Remover?')">
+                                                    <input type="hidden" name="acao" value="deletar">
+                                                    <input type="hidden" name="id" value="<?= $d['id'] ?>">
+                                                    <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>

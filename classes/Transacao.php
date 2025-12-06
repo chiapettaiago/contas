@@ -190,5 +190,45 @@ class Transacao {
         $stmt->execute([$mes, $ano, $userId]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Marca/Desmarca uma transação como paga
+     */
+    public function marcarPago($id, $pago = 1) {
+        $userId = null;
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id'])) {
+            $userId = (int) $_SESSION['user_id'];
+        } else {
+            $userId = 1;
+        }
+
+        $sql = "UPDATE transacoes SET pago = ? WHERE id = ? AND user_id = ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([(int)$pago, $id, $userId]);
+    }
+
+    /**
+     * Retorna o total de valores por tipo (receita/despesa) num período.
+     * Se $apenasPagos for true, considera apenas transações com pago = 1.
+     */
+    public function totalPorTipo($tipo, $mes, $ano, $apenasPagos = false) {
+        $userId = null;
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['user_id'])) {
+            $userId = (int) $_SESSION['user_id'];
+        } else {
+            $userId = 1;
+        }
+
+        $sql = "SELECT COALESCE(SUM(valor), 0) as total FROM transacoes WHERE tipo = ? AND MONTH(data_transacao) = ? AND YEAR(data_transacao) = ? AND user_id = ?";
+        $params = [$tipo, $mes, $ano, $userId];
+        if ($apenasPagos) {
+            $sql .= " AND pago = 1";
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $res = $stmt->fetch();
+        return (float) ($res['total'] ?? 0);
+    }
 }
 ?>
