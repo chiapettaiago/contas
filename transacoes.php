@@ -88,12 +88,12 @@ foreach ($categorias as $cat) {
             </button>
             <div class="collapse navbar-collapse" id="mainNavbar">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a href="index.php" class="nav-link">Dashboard</a></li>
-                    <li class="nav-item"><a href="receitas.php" class="nav-link">Receitas</a></li>
-                    <li class="nav-item"><a href="despesas.php" class="nav-link">Despesas</a></li>
-                    <li class="nav-item"><a href="transacoes.php" class="nav-link active">Transações</a></li>
-                    <li class="nav-item"><a href="categorias.php" class="nav-link">Categorias</a></li>
-                    <li class="nav-item"><a href="relatorios.php" class="nav-link">Relatórios</a></li>
+                    <li class="nav-item"><a href="index.php" class="nav-link"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li class="nav-item"><a href="receitas.php" class="nav-link"><i class="fas fa-plus-circle"></i> Receitas</a></li>
+                    <li class="nav-item"><a href="despesas.php" class="nav-link"><i class="fas fa-minus-circle"></i> Despesas</a></li>
+                    <li class="nav-item"><a href="transacoes.php" class="nav-link active"><i class="fas fa-exchange-alt"></i> Transações</a></li>
+                    <li class="nav-item"><a href="categorias.php" class="nav-link"><i class="fas fa-tags"></i> Categorias</a></li>
+                    <li class="nav-item"><a href="relatorios.php" class="nav-link"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
                 </ul>
             </div>
         </div>
@@ -304,5 +304,6 @@ foreach ($categorias as $cat) {
         // Definir data padrão como hoje
         document.getElementById('data_transacao').valueAsDate = new Date();
     </script>
+    <script src="assets/js/mobile-nav.js"></script>
 </body>
 </html>
