@@ -73,9 +73,9 @@ foreach ($categorias as $cat) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transações - Sistema de Contas Domésticas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?php echo filemtime(__DIR__ . '/assets/css/style.css'); ?>">
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
@@ -304,6 +304,6 @@ foreach ($categorias as $cat) {
         // Definir data padrão como hoje
         document.getElementById('data_transacao').valueAsDate = new Date();
     </script>
-    <script src="assets/js/mobile-nav.js"></script>
+    <script src="assets/js/mobile-nav.js?v=<?php echo filemtime(__DIR__ . '/assets/js/mobile-nav.js'); ?>"></script>
 </body>
 </html>
