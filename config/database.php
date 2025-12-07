@@ -3,6 +3,11 @@
  * Configuração do Banco de Dados
  */
 
+// Ajuste de timezone do sistema para garantir horário correto em PDFs
+// Altere se necessário para outra timezone válida (ex: 'America/Sao_Paulo')
+@date_default_timezone_set('America/Sao_Paulo');
+
+
 define('DB_HOST', '159.203.188.0');
 define('DB_USER', 'contas');
 define('DB_PASS', 'YaDXBjcTfNsYmc42');

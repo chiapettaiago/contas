@@ -1,3 +1,19 @@
+# Contas (Sistema de registro financeiro)
+
+Este projeto é um sistema simples de registro financeiro em PHP + MySQL.
+
+Gerar PDFs (exportação):
+
+- Recomendo instalar o Dompdf (biblioteca PHP pura) para gerar PDFs sem depender de comandos shell.
+- Para instalar dependências (no diretório do projeto), execute:
+
+```bash
+composer install
+```
+
+- Se preferir usar `wkhtmltopdf`, instale o binário no servidor e permita execução de comandos shell.
+
+Após instalar dependências, teste a funcionalidade de "Exportar PDF" nas páginas de `despesas`, `receitas` ou `relatorios`.
 # Sistema de Registro Financeiro - Contas Domésticas
 
 Um sistema completo e profissional de gestão financeira doméstica desenvolvido com PHP e MySQL.
